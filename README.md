@@ -27,7 +27,9 @@ Published work establishes that ECG carries strong sex-specific signal: models c
 **RQ3 — Mechanism.** If a gap persists, is it because the learned representation differs by sex, or because a shared representation needs a different decision threshold? Tested by post-hoc per-sex recalibration of the pooled model.
 
 ## 4. Dataset
-https://physionet.org/content/ptb-xl/1.0.3/ 
+
+[Dataset](https://physionet.org/content/ptb-xl/1.0.3/)
+
 **PTB-XL v1.0.3** — 21,799 clinical 12-lead ECGs from 18,869 patients, 10 seconds each, available at both 100 Hz and 500 Hz. Freely available on PhysioNet with no credentialing requirement.
 
 Relevant properties:

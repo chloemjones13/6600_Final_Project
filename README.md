@@ -12,9 +12,9 @@ Chloe Jones · Olivia Semien · Due Sept 30, 2026
 
 **Questions.**
 
-- **RQ1 — Trade-off.** At a fixed budget of N samples, is female performance better served by all-female data or by a mixed set? We try to state an exchange rate: how many mixed samples equal one sex-matched one.
-- **RQ2 — Does scale fix it?** The default answer to a subgroup gap is "collect more data." We train across a ladder of sizes and check whether the male–female gap actually shrinks. A flat line means more data doesn't fix it.
-- **RQ3 — Why?** If a gap survives, is it a different learned representation (needs a separate model) or a mis-set threshold (needs recalibration)? Tested by recalibrating on women only.
+- **1 — Trade-off.** At a fixed budget of N samples, is female performance better served by all-female data or by a mixed set? We try to state an exchange rate: how many mixed samples equal one sex-matched one.
+- **2 — Does scale fix it?** The default answer to a subgroup gap is "collect more data." We train across a ladder of sizes and check whether the male–female gap actually shrinks. A flat line means more data doesn't fix it.
+- **3 — Why?** If a gap survives, is it a different learned representation (needs a separate model) or a mis-set threshold (needs recalibration)? Tested by recalibrating on women only.
 
 **Success criteria.** We succeed if we produce (1) a gap-vs-size plot with error bars, (2) an answer on the RQ1 trade-off, (3) a recalibration result, and (4) honest reporting against seed noise — including "the effect is smaller than the noise," which is a real finding, not a failure. We are not claiming a new architecture.
 

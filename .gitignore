@@ -1,0 +1,23 @@
+# data — too big for git, pulled via wget (see README)
+data/*
+!data/.gitkeep
+!data/ptbxl_database.csv
+!data/scp_statements.csv
+*.dat
+*.hea
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# model artifacts
+*.pt
+*.pth
+*.h5
+checkpoints/
+
+# os
+.DS_Store

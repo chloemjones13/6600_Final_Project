@@ -20,7 +20,7 @@ Chloe Jones · Olivia Semien · Due Sept 30, 2026
 
 **Scope.** Open dataset, no credentialing. 100 Hz signals train in minutes per run. Grid bounded at ~45 runs. Work splits cleanly into a data track and a modeling track.
 
-**Why us.** Both of us care about what happens when a model meets a population it wasn't trained on. ECG is a case where the clinical criteria already have that problem — thresholds derived from male-dominated cohorts, women's cardiac events documented as underdiagnosed. A pooled AUROC can look healthy while the female subgroup underneath it doesn't.
+**Why it matters to us.** Someone has to study women's health.
 
 ---
 

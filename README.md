@@ -117,7 +117,7 @@ PTB-XL labels come from ECG reads, not imaging, so women whose hypertrophy the c
 - **Per-class breakdown:** the trade-off likely differs between MI and conduction disturbance; a pooled average would hide it.
 - **Age stratification:** ECG sex signal is reported to weaken with age, predicting a larger gap in younger patients. We test it directly.
 
-**Splits.** Patient-disjoint throughout via `strat_fold`. Folds 1–8 training, one fold held out for validation and model selection, folds 9–10 test. Test sets are fixed before anything else and never touched.
+**Splits.** Patient-disjoint throughout via `strat_fold`. Folds 1–7 training, one fold held out for validation and model selection, folds 9–10 test. Test sets are fixed before anything else and never touched.
 
 **Noise.** Three seeds per cell, varying both the data subset and weight initialization. Everything reported as means with error bars.
 

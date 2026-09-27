@@ -50,24 +50,61 @@ Data is gitignored. The repo carries code and the metadata CSV only, so anyone c
 
 ## 3. Data audit / EDA
 
-*See `notebooks/eda.ipynb`.*
+Notebooks: [`01_data_cleaning.ipynb`](notebooks/01_data_cleaning.ipynb) (cleaning, labels, test sets, basic EDA) → [`02_eda_signals.ipynb`](notebooks/02_eda_signals.ipynb) (signal-level EDA). Run in order; the first saves the cleaned data the second loads.
 
-**What we looked at.**
+### Cleaning
 
-- Sex and age distributions, overall and crossed
-- Class prevalence per superclass, split by sex (multi-label, so co-occurrence too)
-- Records per sex × age band × superclass — the feasibility table
-- Device and recording site crosstabbed against sex
-- Representative 12-lead waveform plots, one per superclass
-- Signal-quality flags and human-validation coverage
+- **Age:** ages above 89 are stored as 300 for privacy. We keep ages 20–85 (following Steinbrinker et al., 2025), which removes the 300s and pediatric records: **21,799 → 20,370 records**.
+- **Sex:** `0` = male, `1` = female. Cleaned cohort is **10,870 male / 9,500 female (46.6% female)**.
+- **Labels:** SCP codes mapped to the 5 superclasses via `scp_statements.csv`. 378 records have only rhythm/form codes and no diagnostic label; kept for EDA, dropped before training.
+- **Test set:** folds 9–10, **4,048 records (2,177 male, 1,871 female)**, all human-validated.
 
-**What matters for the design.**
+### Who is in the data
 
-*Feasibility.* The training ladder tops out wherever the scarcest sex × age × class cell runs dry after matching. This table sets the real ceiling on our grid, and we'll adjust the ladder to whatever it says.
+![Age by sex](figures/age_by_sex.png)
 
-*Confounds.* Men and women in a clinical cohort differ in age and in disease base rates. Comparing unmatched groups would measure epidemiology, not physiology — so training cells are matched on age and class prevalence, and we report what we couldn't balance. We also check device and site against sex, since a device artifact correlated with sex would look exactly like a sex effect.
+Women are older (median 63 vs 60) with a wider spread (SD 16.1 vs 14.2).
 
-*Failure modes.* NORM dominates the label distribution, so accuracy is uninformative and rare classes will be noisy. Not every record is human-validated. Some carry noise and baseline-drift flags.
+![Diagnosis by sex](figures/diagnosis_by_sex.png)
+
+| | NORM | MI | STTC | CD | HYP |
+|---|---|---|---|---|---|
+| Male (% of 10,870) | 38.5 | 30.3 | 22.6 | 26.0 | 13.5 |
+| Female (% of 9,500) | 50.3 | 19.0 | 24.9 | 17.2 | 10.4 |
+
+Base rates differ sharply: half of women's ECGs are normal vs 39% of men's, and men have far more MI (30% vs 19%) and CD (26% vs 17%). An unmatched male-vs-female comparison would mostly measure these base rates, which is why training sets will be matched on age and class prevalence.
+
+### Signals
+
+![Example ECGs](figures/ecg_examples_by_diagnosis.png)
+
+![Average heartbeat by sex](figures/average_beat_by_sex.png)
+
+Averaging ~1,000 normal ECGs, lead II is nearly identical by sex, but in the chest leads (V4, V5) the female R peak is clearly shorter (~1.05 vs ~1.4 mV) and the T wave lower; V1 shows a flatter ST/T segment in women. Sex differences sit in the chest leads and the ST/T region, which overlaps the features used to diagnose MI and STTC.
+
+![Amplitude by lead](figures/signal_amplitude_by_lead.png)
+
+Women's median resting heart rate is 70.6 bpm vs 65.9 for men.
+
+### Biases and failure modes
+
+**Label bias from male-derived criteria.** The Sokolow-Lyon voltage rule flags hypertrophy above 3.5 mV. Among patients *diagnosed* with HYP, only **49.0% of women** exceed it vs **61.5% of men**.
+
+![Sokolow-Lyon](figures/sokolow_hyp_vs_norm.png)
+
+PTB-XL labels come from ECG reads, not imaging, so women whose hypertrophy the criteria miss may be labeled as not having it. A model trained on these labels can learn that bias, and our test set can't detect errors the labels share. We report performance as agreement with expert ECG reads, not ground-truth disease.
+
+**Device confound.** The CS100 device recorded **37.2% of men but 21.2% of women**. A model could learn device artifacts that correlate with sex, so any sex gap must be checked against device.
+
+![Device by sex](figures/device_by_sex.png)
+
+**Label quality.** Folds 1–8 are only 62–66% human-validated; about a third of training labels are unreviewed machine reports.
+
+![Validation by fold](figures/label_validation_by_fold.png)
+
+**Noise.** Static noise affects ~15% of records; baseline drift, burst noise, and extra beats each affect 2–10%. Rates are similar by sex.
+
+**Other.** Class imbalance (NORM 8,964 vs HYP 2,460) makes accuracy uninformative. The `report` column (German/Swedish free text) and fields like `heart_axis` and `infarction_stadium` are written from the ECG by cardiologists, so they would leak the answer and are excluded as inputs.
 
 ---
 

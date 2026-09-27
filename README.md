@@ -148,3 +148,15 @@ Run at a subset of training sizes, not the full grid, so the primary comparison 
 
 ~5 min, linked [HERE]()
 ---
+
+
+## AI Disclosure
+
+We used AI as an assistant on this check-in. Specifically, it helped with:
+
+- **Code:** drafting and debugging the data cleaning, label mapping, and plotting code 
+- **Error checking:** Ran code by ai for error checking and fixing
+- **Explanation:** explaining ECG terminology (leads, QRS, ST segment, hypertrophy voltage criteria) and what the plots show.
+- **Writing:** drafting parts of this README, including the EDA summary and chart takeaways, from our notebook results.
+
+All code was run by us on the real data, and all numbers in this document come from our notebook outputs. We reviewed and edited the AI-assisted code and text, and we are responsible for the final content.

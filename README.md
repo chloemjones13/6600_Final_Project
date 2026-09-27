@@ -139,10 +139,6 @@ Architecture stays **fixed** across every cell of the main grid. The independent
 
 Run at a subset of training sizes, not the full grid, so the primary comparison stays clean. The encoder would come from a publicly available self-supervised ECG model — these are largely 1D vision-transformer masked autoencoders, which is how a transformer enters the design.
 
-Two conditions on this arm:
-
-- **Leakage check is a prerequisite.** Several public ECG foundation models include PTB-XL in their pretraining corpus. Loading those weights would contaminate our held-out folds. We verify the pretraining corpus before using any checkpoint.
-- **Expect a small effect.** Published scaling work on PTB-XL reports that pretraining helps rhythm and form tasks substantially but improves *diagnostic* labels by only about 0.024 AUROC, and that checkpoints pretrained on fewer than roughly 400,000 ECGs often fail to beat a non-pretrained control at all. We run this arm at our larger N values, where seed noise is lowest.
 
 **Non-neural probe.** Logistic regression on simple extracted features, to establish a floor the neural model has to beat.
 

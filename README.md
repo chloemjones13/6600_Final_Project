@@ -150,7 +150,7 @@ Run at a subset of training sizes, not the full grid, so the primary comparison 
 ---
 
 
-## AI Disclosure
+## 7. AI Disclosure
 
 We used AI as an assistant on this check-in. Specifically, it helped with:
 
@@ -162,7 +162,7 @@ We used AI as an assistant on this check-in. Specifically, it helped with:
 All code was run by us on the real data, and all numbers in this document come from our notebook outputs. We reviewed and edited the AI-assisted code and text, and we are responsible for the final content.
 
 
-## 7. Citations
+## 8. Citations
 
 ## References
 

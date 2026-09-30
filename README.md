@@ -146,7 +146,7 @@ Run at a subset of training sizes, not the full grid, so the primary comparison 
 
 ## 6. Video
 
-~5 min, linked [HERE]()
+~5 min, linked [HERE](https://georgetown.zoom.us/rec/share/U7h6VP5fh0Z8LLdASP5MVAZjTZPWpq3kQSlmA6FquTaVAzA-Bis6J5t6NKSxKQmK.NyYZniEmehRwY_nv?startTime=1790781544000)
 ---
 
 

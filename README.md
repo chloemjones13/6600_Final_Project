@@ -20,7 +20,7 @@ Chloe Jones · Olivia Semien · Due Sept 30, 2026
 
 **Scope.** Open dataset, no credentialing. 100 Hz signals train in minutes per run. Grid bounded at ~45 runs. Work splits cleanly into a data track and a modeling track.
 
-**Why it matters to us.** Someone has to study women's health.
+**Why it matters to us.** Women's health is understudied in both medicine and data science, and cardiology is a clear example. Heart disease in women is often underdiagnosed, and many diagnostic standards were built mostly on data from men. If ECG models learn the same bias, they could end up performing worse for the patients who are already underserved. As women in data science, we want to understand whether this happens and what can reduce it. This is a semester project, but the skills we build here could one day support more impactful work.
 
 ---
 

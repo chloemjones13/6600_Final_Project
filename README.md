@@ -16,7 +16,7 @@ Chloe Jones · Olivia Semien · Due Sept 30, 2026
 - **2 — Does scale fix it?** The default answer to a subgroup gap is "collect more data." We train across a ladder of sizes and check whether the male–female gap actually shrinks. A flat line means more data doesn't fix it.
 - **3 — Why?** If a gap survives, is it a different learned representation (needs a separate model) or a mis-set threshold (needs recalibration)? Tested by recalibrating on women only.
 
-**Success criteria.** We succeed if we produce (1) a gap-vs-size plot with error bars, (2) an answer on the RQ1 trade-off, (3) a recalibration result, and (4) honest reporting against seed noise — including "the effect is smaller than the noise," which is a real finding, not a failure. We are not claiming a new architecture.
+**Success criteria.** Success means we can quantify how much sex-matching vs. sample size affects the AUROC gap between men and women, with the neural model beating the logistic regression baseline.
 
 **Scope.** Open dataset, no credentialing. 100 Hz signals train in minutes per run. Grid bounded at ~45 runs. Work splits cleanly into a data track and a modeling track.
 
@@ -110,14 +110,14 @@ PTB-XL labels come from ECG reads, not imaging, so women whose hypertrophy the c
 
 ## 4. Evaluation plan
 
+Train on folds 1–7, validate on fold 8, test on folds 9–10. Test sets are fixed before anything else and never touched.
+
 **Metrics.** Macro AUROC and AUPRC, reported separately for male and female test sets. Not accuracy — class imbalance makes it meaningless.
 
 - **Gap metric:** male-minus-female AUROC, plotted against training size. This is the answer to RQ2.
 - **Calibration:** reliability curves and Expected Calibration Error per subgroup. A model can match AUROC across groups while under-predicting risk in one of them at a fixed threshold — that's the failure mode that reaches patients.
 - **Per-class breakdown:** the trade-off likely differs between MI and conduction disturbance; a pooled average would hide it.
 - **Age stratification:** ECG sex signal is reported to weaken with age, predicting a larger gap in younger patients. We test it directly.
-
-**Splits.** Patient-disjoint throughout via `strat_fold`. Folds 1–7 training, one fold held out for validation and model selection, folds 9–10 test. Test sets are fixed before anything else and never touched.
 
 **Noise.** Three seeds per cell, varying both the data subset and weight initialization. Everything reported as means with error bars.
 

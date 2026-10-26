@@ -1,0 +1,47 @@
+{
+  "model": "cnn",
+  "architecture": "ResNet1d: stem conv + 4 residual blocks (9 conv layers), global avg pool, linear head",
+  "sampling_rate_hz": 100,
+  "input_shape": [
+    12,
+    1000
+  ],
+  "train_folds": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "val_folds": [
+    8
+  ],
+  "test_folds": [
+    9,
+    10
+  ],
+  "normalization": "per-lead z-score, mean/std from each model's own training records",
+  "loss": "BCEWithLogitsLoss (unweighted)",
+  "optimizer": "AdamW",
+  "lr": 0.001,
+  "weight_decay": 0.0001,
+  "batch_size": 64,
+  "max_epochs": 40,
+  "early_stopping_patience": 7,
+  "scheduler": "ReduceLROnPlateau(mode=max on val macro AUROC, factor=0.5, patience=3)",
+  "dropout": 0.2,
+  "selection_metric": "validation macro AUROC",
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "train_groups": [
+    "female",
+    "male",
+    "all"
+  ],
+  "match_size": false
+}

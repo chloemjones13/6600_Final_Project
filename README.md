@@ -18,7 +18,7 @@ We built the neural baseline: a 1D residual CNN over the raw 12-lead ECG, traine
 | `cnn_male` | male records, folds 1–7 | male, fold 8 | 7,444 |
 | `cnn_all` | all records, folds 1–7 | all, fold 8 | 14,010 |
 
-Each model is trained with 3 seeds (9 runs total) and every model is tested on **both** the male and female test sets (folds 9–10), giving a 3 × 2 grid. This grid is the first direct look at RQ1 (sex-matched vs. mixed data) and the starting point for RQ2 (does more data close the gap).
+Each model is trained with 3 seeds (9 runs total) and every model is tested on **both** the male and female test sets (folds 9–10), giving a 3 × 2 grid. This grid is a first look at two of our questions: is sex-matched training data better for women than mixed data, and does more data close the male–female gap?
 
 Notebook: [`notebooks/03_cnn_baseline.ipynb`](notebooks/03_cnn_baseline.ipynb)
 
@@ -58,7 +58,7 @@ Each residual block is two `k=7` convolutions with batch norm, ReLU and dropout,
 | **Stopping** | max 40 epochs; early stop after 7 epochs with no validation improvement; keep the best-validation-AUROC checkpoint |
 | **Seeds** | 0, 1, 2 — each changes weight init and batch order |
 
-**Size confound.** `cnn_all` trains on roughly twice as many records as either single-sex model, so comparing it to them mixes *more data* with *mixed data*. The notebook has a `MATCH_SIZE` switch that subsamples every group to the female training size (6,566) to separate the two; that run is next (see §7).
+**Size confound.** `cnn_all` trains on roughly twice as many records as either single-sex model, so comparing it to them mixes *more data* with *mixed data*. The notebook has a `MATCH_SIZE` switch that subsamples every group to the female training size (6,566) to separate the two; this is the first step of the training-size ladder (§7).
 
 ---
 
@@ -84,7 +84,7 @@ All numbers are on the held-out test set, mean ± std over 3 seeds.
 
 ### What the results say
 
-- **The combined model is best for everyone.** `cnn_all` beats both single-sex models on both test sets, including beating the female-only model on women by about 0.012 AUROC. At these sizes, more data wins over sex-matched data. Because `cnn_all` also has twice the data, this doesn't yet tell us whether *mixing* helps or only *size* helps — that's what the size-matched run is for.
+- **The combined model is best for everyone.** `cnn_all` beats both single-sex models on both test sets, including beating the female-only model on women by about 0.012 AUROC. At these sizes, more data wins over sex-matched data. Because `cnn_all` also has twice the data, this doesn't yet tell us whether *mixing* helps or only *size* helps — the training-size ladder (§7) will separate the two.
 - **Sex-matching didn't help women at this size.** On the female test set, `cnn_female` (0.905) and `cnn_male` (0.907) are effectively tied. A model that never saw a female ECG does as well on women as one trained only on women. The male training set is ~13% larger, which may account for its small edge.
 - **Every model scores higher on men — even the female-only one.** `cnn_female` is still 0.008 better on men than women. So the gap isn't only about who is in the training data; part of it comes from the female test set being harder for this task (different base rates, lower chest-lead voltage, labels built on male-derived criteria — see Check-in 1 EDA).
 - **Training composition does change the size of the gap.** The gap is smallest for the female-only model (0.008), largest for the male-only model (0.017), and in between for the combined model (0.012). Seed variance is small (std ≤ 0.006 on every AUROC), so differences of ~0.01 are consistent across seeds; differences of ~0.002 are not meaningful.
@@ -155,7 +155,7 @@ The worst HYP miss is a 66-year-old woman with low-amplitude V5 complexes; the m
 - The unweighted loss is conservative on rare classes: at a 0.5 cutoff, HYP is missed over half the time and MI, STTC and CD are missed more often in women (§5).
 
 **Next.**
-1. **Training-size ladder** (the main grid): train all three groups at several sizes, from small subsets up to 6,566 records (the full female training set), 3 seeds each. Every model is subsampled to the same N, which separates "more data" from "mixed data." Reading **across groups at a fixed N** answers is sex-matched data better for women than the same amount of mixed data?. Reading **across sizes** and plotting the M − F gap against N answers does more data close the gap?.
+1. **Training-size ladder** (the main grid): train all three groups at several sizes, from small subsets up to 6,566 records (the full female training set), 3 seeds each. Every model is subsampled to the same N, which separates "more data" from "mixed data." Reading **across groups at a fixed N** tests whether sex-matched data is better for women than the same amount of mixed data. Reading **across sizes** and plotting the M − F gap against N tests whether more data closes the gap.
 2. **Shared evaluation:** calibration (ECE, reliability curves by sex), age-band and device slices, and comparison against the logistic regression floor.
 3. **Recalibration on women only**, focused on MI, to test representation vs. threshold.
 4. **Recall-focused loss.** In a clinical screening setting, a missed diagnosis costs more than a false alarm, and our errors concentrate in missed disease in women. We will train a variant that penalizes misses more heavily:
@@ -163,7 +163,7 @@ The worst HYP miss is a 66-year-old woman with low-amplitude V5 complexes; the m
    - **Focal loss**, which down-weights easy, already-correct examples so training concentrates on hard cases and confident misses (true positives the model scores near 0, like the low-voltage female HYP case in §5).
 
    This runs as a **separate arm** rather than replacing the baseline. Weighting inflates predicted probabilities, which would distort the calibration-by-sex comparison. So the unweighted model stays the reference for the main grid, and we compare the two on recall/sensitivity by sex, confident-miss counts, AUROC, and calibration. The key question is whether a recall-focused loss shrinks the female miss rate more than simply lowering the decision threshold on the unweighted model.
-5. **Transfer learning.** we also ask whether more data closes the gap. Pretraining is more data, borrowed rather than collected: an encoder pretrained on large external ECG collections has seen far more patients than PTB-XL holds. If scale within PTB-XL doesn't close the gap, transfer might. We will compare three regimes on the same splits and test sets:
+5. **Transfer learning.** The training-size ladder asks whether more data closes the gap within PTB-XL. Pretraining is more data, borrowed rather than collected: an encoder pretrained on large external ECG collections has seen far more patients than PTB-XL holds. If scale within PTB-XL doesn't close the gap, transfer might. We will compare three regimes on the same splits and test sets:
 
    | Regime | What trains |
    |---|---|

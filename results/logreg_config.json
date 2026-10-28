@@ -1,0 +1,42 @@
+{
+  "model": "logistic_regression",
+  "feature_method": "mean of consecutive 10 samples per lead",
+  "input_features": 1200,
+  "sampling_rate_hz": 100,
+  "train_folds": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "val_folds": [
+    8
+  ],
+  "test_folds": [
+    9,
+    10
+  ],
+  "classes": [
+    "NORM",
+    "MI",
+    "STTC",
+    "CD",
+    "HYP"
+  ],
+  "train_groups": [
+    "female",
+    "male",
+    "all"
+  ],
+  "match_size": false,
+  "C_values": [
+    0.1,
+    1.0,
+    10.0
+  ],
+  "selection_metric": "validation macro AUROC",
+  "scaling": "StandardScaler fitted on training records only"
+}

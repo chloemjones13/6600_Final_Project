@@ -25,6 +25,8 @@ Notebook: [`notebooks/03_cnn_baseline.ipynb`](notebooks/03_cnn_baseline.ipynb)
 We also trained a non-neural comparison: a logistic regression on the same splits, groups and test sets (§4, *Logistic regression baseline*).
  
 Notebook: [`notebooks/04_logistic_baseline.ipynb`](notebooks/04_logistic_baseline.ipynb)
+
+
  
 
 ---
@@ -197,7 +199,12 @@ The worst HYP miss is a 66-year-old woman with low-amplitude V5 complexes; the m
 
 ---
 
-## 8. AI Disclosure
+## 8. Video
+
+~5 min, linked [HERE](https://georgetown.zoom.us/rec/share/2w44Ck5Cgy8kCSn4weL3ehHqS19dM76_IRvDnvnVY4d8fZqI003hjPLKibnPOZc4.Li545-hUdWyEy0iD)
+---
+
+## 9. AI Disclosure
 
 We used AI as an assistant on this check-in. Specifically, it helped with:
 
@@ -209,7 +216,7 @@ All code was run by us on the real data, and all numbers in this document come f
 
 ---
 
-## 9. References
+## 10. References
 
 Wagner, P., Strodthoff, N., Bousseljot, R.-D., Kreiseler, D., Lunze, F. I., Samek, W., & Schaeffter, T. (2020). PTB-XL, a large publicly available electrocardiography dataset. *Scientific Data*. https://doi.org/10.1038/s41597-020-0495-6
 

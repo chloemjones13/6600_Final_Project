@@ -22,6 +22,11 @@ Each model is trained with 3 seeds (9 runs total) and every model is tested on *
 
 Notebook: [`notebooks/03_cnn_baseline.ipynb`](notebooks/03_cnn_baseline.ipynb)
 
+We also trained a non-neural comparison: a logistic regression on the same splits, groups and test sets (§4, *Logistic regression baseline*).
+ 
+Notebook: [`notebooks/04_logistic_baseline.ipynb`](notebooks/04_logistic_baseline.ipynb)
+ 
+
 ---
 
 ## 2. Model
@@ -89,6 +94,22 @@ All numbers are on the held-out test set, mean ± std over 3 seeds.
 - **Every model scores higher on men — even the female-only one.** `cnn_female` is still 0.008 better on men than women. So the gap isn't only about who is in the training data; part of it comes from the female test set being harder for this task (different base rates, lower chest-lead voltage, labels built on male-derived criteria — see Check-in 1 EDA).
 - **Training composition does change the size of the gap.** The gap is smallest for the female-only model (0.008), largest for the male-only model (0.017), and in between for the combined model (0.012). Seed variance is small (std ≤ 0.006 on every AUROC), so differences of ~0.01 are consistent across seeds; differences of ~0.002 are not meaningful.
 
+### Logistic regression baseline
+ 
+As a non-neural comparison, we trained a one-vs-rest logistic regression (L2, `liblinear`) with the same splits, the same three training groups, and the same test sets as the CNN. Its input is the raw 100 Hz signal, downsampled by averaging every 10 consecutive samples: 12 leads × 100 points = 1,200 features per ECG, standardized on each model's own training records. C was chosen from {0.1, 1, 10} by validation macro AUROC; C = 10 won for every group. One seed, since the solver is deterministic.
+ 
+| Model | Test: all | Test: male | Test: female | CNN, test: all |
+|---|---|---|---|---|
+| `logreg_female` | 0.533 | 0.535 | 0.530 | 0.910 |
+| `logreg_male` | 0.552 | 0.552 | 0.552 | 0.915 |
+| `logreg_all` | 0.573 | 0.574 | 0.572 | 0.921 |
+ 
+*Macro AUROC on the test set. CNN column is seed 0 for a like-for-like comparison.*
+ 
+**It performs near chance, and that is expected for this input.** Heartbeats fall at different positions in each recording, so a feature like "lead II at time slot 37" is mid-beat for one patient and between beats for another. A linear model can't account for that, so it has almost nothing consistent to learn from. The CNN's convolutions and global pooling detect patterns wherever they occur in the signal, which is a large part of why it does so much better. Because the logistic model is close to random for both sexes, it doesn't tell us anything about the male–female gap; it only shows that the raw waveform needs a position-invariant model (or position-invariant features).
+ 
+Outputs: [`results/logreg_summary_metrics.csv`](results/logreg_summary_metrics.csv), [`results/logreg_per_class_metrics.csv`](results/logreg_per_class_metrics.csv), and per-model predictions in `results/`.
+
 ---
 
 ## 5. Failure analysis
@@ -148,11 +169,12 @@ The worst HYP miss is a 66-year-old woman with low-amplitude V5 complexes; the m
 ## 7. Limitations and next steps
 
 **Limitations of this baseline.**
-- `cnn_all` vs. the single-sex models confounds size and composition (§3).
+- `cnn_all` vs. the single-sex models confounds size and composition.
 - Labels are expert ECG reads, not ground truth; if the labels under-diagnose women (e.g., HYP), our test set can't see it.
 - The device confound from Check-in 1 (CS100 records 37% of men vs 21% of women) hasn't been checked against the gap yet.
-- Validation-loss overfitting may affect calibration (§6).
-- The unweighted loss is conservative on rare classes: at a 0.5 cutoff, HYP is missed over half the time and MI, STTC and CD are missed more often in women (§5).
+- Validation-loss overfitting may affect calibration.
+- The unweighted loss is conservative on rare classes: at a 0.5 cutoff, HYP is missed over half the time and MI, STTC and CD are missed more often in women.
+- The logistic regression baseline uses raw time-point features and performs near chance, so it isn't yet a meaningful floor.
 
 **Next.**
 1. **Training-size ladder** (the main grid): train all three groups at several sizes, from small subsets up to 6,566 records (the full female training set), 3 seeds each. Every model is subsampled to the same N, which separates "more data" from "mixed data." Reading **across groups at a fixed N** tests whether sex-matched data is better for women than the same amount of mixed data. Reading **across sizes** and plotting the M − F gap against N tests whether more data closes the gap.

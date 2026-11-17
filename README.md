@@ -26,8 +26,7 @@ Chloe Jones · Olivia Semien
 
 All models train on the same `all` group (folds 1–7, both sexes, 14,010 ECGs).
 
-- Notebook: [`notebooks/05_hubert_transfer_mean.ipynb`](notebooks/05_hubert_transfer_mean.ipynb) (training and comparison, run on a Colab T4)
-- Confidence intervals: [`scripts/check_in_3_stats.py`](scripts/check_in_3_stats.py) (paired bootstrap, miss rates, calibration from the saved predictions; outputs in `hubert_results/stats_*.csv`)
+Notebook: [`notebooks/05_hubert_transfer_mean.ipynb`](notebooks/05_hubert_transfer_mean.ipynb) (training and comparison, run on a Colab T4). Results: `hubert_results/`.
 
 ### Input pipeline
 A pretrained encoder expects inputs that look like its pretraining data, so we use the authors' preprocessing instead of our CNN's z-score: 0.05–47 Hz FIR bandpass → resample to 500 Hz → per-lead min-max to [−1, 1] → 5 s windows, each flattened and decimated to 6,000 samples. We checked our implementation against the authors' pipeline (max difference < 1e-7). Each record is processed on its own, so no statistics are shared across records or sexes.
@@ -43,7 +42,7 @@ We also turned off the encoder's pretraining-time masking, which the Hugging Fac
 
 ## 2. Comparison (same protocol as Check-in 2)
 
-Same splits (train folds 1–7, val fold 8, test folds 9–10), same labels, same test records (2,137 male / 1,842 female; the notebook checks this against the saved CNN predictions), same metrics, 3 seeds per model. Values are mean ± std over seeds. 95% CIs come from a paired bootstrap (2,000 resamples of test patients within each sex, on seed-averaged predictions).
+Same splits (train folds 1–7, val fold 8, test folds 9–10), same labels, same test records (2,137 male / 1,842 female; the notebook checks this against the saved CNN predictions), same metrics, 3 seeds per model. Values are mean ± std over seeds.
 
 ### Macro AUROC and AUPRC by test sex
 
@@ -57,23 +56,17 @@ Same splits (train folds 1–7, val fold 8, test folds 9–10), same labels, sam
 
 ![AUROC by sex](figures/hubert_figures/auroc_by_sex_cnn_vs_hubert.png)
 
-**Extension vs baseline** (`hubert_finetuned_all` − `cnn_all`):
+**Extension vs baseline** (`hubert_finetuned_all` − `cnn_all`, difference of seed means): male −0.026, female −0.016, gap −0.011. Both drops are several times the seed-to-seed spread (std ≤ 0.003). The gap is smaller because men lost more than women did.
 
-| | Difference | 95% CI |
-|---|---|---|
-| Male AUROC | −0.029 | −0.035 to −0.023 |
-| Female AUROC | −0.017 | −0.024 to −0.011 |
-| Gap (M − F) | −0.011 | −0.020 to −0.003 |
-
-All three intervals exclude zero. The gap is smaller because men lost more than women did.
-
-### Ablations (one change each)
+### Ablations (one change each; difference of seed means)
 
 | Comparison | What changes | Male | Female | Gap |
 |---|---|---|---|---|
-| frozen → fine-tuned | encoder weights update on PTB-XL | **+0.043** (0.035, 0.050) | **+0.043** (0.036, 0.051) | −0.000 (−0.011, 0.010) |
-| frozen → meanmax2 | average probabilities → learned mean + max pooling | +0.004 (0.002, 0.005) | +0.004 (0.003, 0.006) | −0.000 (−0.003, 0.002) |
-| meanmax2 → meanmax3 | + overlapping 2.5–7.5 s window | +0.003 (0.002, 0.004) | −0.001 (−0.002, 0.001) | +0.004 (0.001, 0.006) |
+| frozen → fine-tuned | encoder weights update on PTB-XL | **+0.040** | **+0.040** | +0.000 |
+| frozen → meanmax2 | average probabilities → learned mean + max pooling | +0.004 | +0.004 | −0.000 |
+| meanmax2 → meanmax3 | + overlapping 2.5–7.5 s window | +0.003 | −0.001 | +0.003 |
+
+The frozen variants vary very little across seeds (std ≤ 0.001), so even the small pooling gains are consistent from seed to seed.
 
 ### Per-class AUROC gap (male − female, mean over seeds)
 
@@ -92,18 +85,18 @@ All three intervals exclude zero. The gap is smaller because men lost more than 
 | | `cnn_all` | frozen | meanmax3 | fine-tuned |
 |---|---|---|---|---|
 | AUROC male / female | 0.902 / 0.895 | 0.780 / 0.800 | 0.789 / 0.805 | 0.819 / 0.848 |
-| Miss rate male / female | 0.54 / 0.53 | 0.91 / 0.88 | 0.86 / 0.85 | 0.76 / 0.74 |
+| Miss rate male / female (seed 0) | 0.53 / 0.55 | 0.92 / 0.90 | 0.85 / 0.84 | 0.84 / 0.81 |
 
-### Miss rates in women at a 0.5 cutoff (mean over seeds)
+### Miss rates in women at a 0.5 cutoff (seed 0)
 
 | Class | `cnn_all` | `hubert_finetuned_all` |
 |---|---|---|
-| MI | 0.375 | 0.427 |
-| STTC | 0.325 | 0.317 |
-| CD | 0.355 | 0.378 |
-| HYP | 0.535 | 0.738 |
+| MI | 0.374 | 0.391 |
+| STTC | 0.390 | 0.398 |
+| CD | 0.327 | 0.392 |
+| HYP | 0.545 | 0.812 |
 
-**Calibration** (expected calibration error, mean over classes and seeds) is similar across models: CNN 0.034 male / 0.045 female, fine-tuned HuBERT 0.040 / 0.044, frozen variants 0.024–0.029.
+Miss rates come from a single seed and move noticeably between seeds, so read them as rough.
 
 ---
 
@@ -111,13 +104,13 @@ All three intervals exclude zero. The gap is smaller because men lost more than 
 
 **Worse overall.** The best HuBERT model (fine-tuned) is 2 AUROC points below the CNN, and the frozen variants are about 6 points below. It isn't undertrained: fine-tuned validation loss bottomed out at epochs 10–13 and then rose while training loss kept falling, best validation AUROC came at epochs 13–15, and 2 of 3 seeds early-stopped.
 
-**Main cause: amplitude scaling erases voltage (supported by the per-class results).** HuBERT's required preprocessing min-max scales every lead of every ECG to [−1, 1], so a very tall QRS and a normal one look the same. Our CNN z-scores with training-set statistics and keeps absolute voltage. Hypertrophy is diagnosed largely from QRS voltage, and HYP is exactly where HuBERT collapses: AUROC 0.90 → 0.82–0.85, miss rate 54% → about 75%. Changing which time windows the model sees (meanmax2/3) left HYP essentially unchanged, so HYP's problem is not time coverage. The other classes lose less (NORM about −0.02, MI/CD −0.01 to −0.02, STTC near zero), so the rest of the gap likely comes from the other differences: 5 s inputs vs the CNN's full 10 s, leads concatenated end to end instead of seen side by side, and a pretraining mix that differs from PTB-XL.
+**Main cause: amplitude scaling erases voltage (supported by the per-class results).** HuBERT's required preprocessing min-max scales every lead of every ECG to [−1, 1], so a very tall QRS and a normal one look the same. Our CNN z-scores with training-set statistics and keeps absolute voltage. Hypertrophy is diagnosed largely from QRS voltage, and HYP is exactly where HuBERT collapses: AUROC 0.90 → 0.82–0.85, miss rate about 54% → over 80% (seed 0). Changing which time windows the model sees (meanmax2/3) left HYP essentially unchanged, so HYP's problem is not time coverage. The other classes lose less (NORM about −0.02, MI/CD −0.01 to −0.02, STTC near zero), so the rest of the gap likely comes from the other differences: 5 s inputs vs the CNN's full 10 s, leads concatenated end to end instead of seen side by side, and a pretraining mix that differs from PTB-XL.
 
 **Why the model is built this way:** pretraining on 9.1M ECGs from ~11 datasets recorded on different devices needs inputs on a common scale, and the architecture is reused from speech, where loudness is irrelevant. Those choices help pretrain at scale but remove information that a specific diagnosis needs.
 
-**The gap "closed" by leveling down.** The male–female gap dropped from 0.012 to 0.002, but the bootstrap shows men lost 0.029 while women lost 0.017. Part of the shrinkage is HYP flipping to favor women under the new preprocessing. That is not a fairness improvement.
+**The gap "closed" by leveling down.** The male–female gap dropped from 0.012 to 0.002, but men lost 0.026 AUROC while women lost 0.016. Part of the shrinkage is HYP flipping to favor women under the new preprocessing. That is not a fairness improvement.
 
-**Fine-tuning helps both sexes equally.** Adapting the encoder to PTB-XL adds 0.043 AUROC for men and women alike, with no change in the gap. The pretrained representation alone (frozen) carries most of the signal, but not all of it.
+**Fine-tuning helps both sexes equally.** Adapting the encoder to PTB-XL adds 0.040 AUROC for men and women alike, with no change in the gap. The pretrained representation alone (frozen) carries most of the signal, but not all of it.
 
 **Time windows matter little.** Learned pooling of the two halves beats averaging probabilities by a small but consistent 0.004. Adding an overlapping middle window adds 0.003 for men and nothing for women. Most of our five classes show up in every beat, so splitting the ECG at 5 s was not what held the model back.
 
@@ -129,8 +122,8 @@ All three intervals exclude zero. The gap is smaller because men lost more than 
 
 <!-- TODO (Olivia): fill in every [TBD]. Keep the Check-in 2 protocol so the numbers line up with the tables above:
      train folds 1-7, val fold 8, test folds 9-10, training group "all", seeds 0-2, checkpoint selection on validation macro AUROC,
-     test on both sexes. Save predictions in the same CSV format as cnn_results/ (EVAL.md) so the comparison and
-     scripts/check_in_3_stats.py can include the new model. -->
+     test on both sexes. Save predictions in the same CSV format as cnn_results/ (EVAL.md) so the comparison
+     tables can include the new model. -->
 
 **What changed:** [TBD: one or two sentences, e.g. architecture, augmentation, loss, input, training schedule]
 
@@ -146,23 +139,17 @@ Notebook: [`notebooks/[TBD].ipynb`](notebooks/) · Results: `[TBD]_results/`
 | `[TBD]` | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
 | `hubert_finetuned_all` | 0.903 ± 0.001 | 0.903 ± 0.001 | 0.902 ± 0.002 | 0.002 ± 0.002 | 0.748 |
 
-**Difference vs `cnn_all`** (paired bootstrap 95% CI; add the model to `MODELS` and `COMPARISONS` in `scripts/check_in_3_stats.py`):
+**Difference vs `cnn_all`** (difference of seed means): male [TBD], female [TBD], gap [TBD].
 
-| | Difference | 95% CI |
-|---|---|---|
-| Male AUROC | [TBD] | [TBD] |
-| Female AUROC | [TBD] | [TBD] |
-| Gap (M − F) | [TBD] | [TBD] |
-
-### Per-class gap and female miss rates
+### Per-class gap (mean over seeds) and female miss rates (seed 0)
 
 | Class | Gap: `cnn_all` | Gap: `[TBD]` | Female miss: `cnn_all` | Female miss: `[TBD]` |
 |---|---|---|---|---|
-| NORM | 0.007 | [TBD] | 0.071 | [TBD] |
-| MI | 0.021 | [TBD] | 0.375 | [TBD] |
-| STTC | 0.012 | [TBD] | 0.325 | [TBD] |
-| CD | 0.015 | [TBD] | 0.355 | [TBD] |
-| HYP | 0.007 | [TBD] | 0.535 | [TBD] |
+| NORM | 0.007 | [TBD] | 0.061 | [TBD] |
+| MI | 0.021 | [TBD] | 0.374 | [TBD] |
+| STTC | 0.012 | [TBD] | 0.390 | [TBD] |
+| CD | 0.015 | [TBD] | 0.327 | [TBD] |
+| HYP | 0.007 | [TBD] | 0.545 | [TBD] |
 
 ### Ablation
 
@@ -197,11 +184,11 @@ We used AI as an assistant on this check-in, specifically for:
 
 - **Code** 
 - **Research** 
-- **Analysis and writing** 
+- **Analysis and writing**
 
 **Credit to the HuBERT-ECG authors:** the pretrained model (architecture and weights) is theirs, loaded from Hugging Face. Our preprocessing re-implements theirs, and our fine-tuning settings (learning rate, optimizer, frozen conv layers, dropout/layerdrop off) follow their released PTB-XL scripts, both from https://github.com/Edoar-do/HuBERT-ECG. The training loop, classification wrapper and comparison analysis are our own, adapted from our Check-in 2 CNN notebook.
 
-All code was run by us on the real data, and all numbers come from our notebook outputs and saved predictions. We reviewed and edited the AI-assisted code and text, and we are responsible for the final content.
+All code was run by us on the real data, and all numbers come from our notebook outputs. We reviewed and edited the AI-assisted code and text, and we are responsible for the final content.
 
 ---
 

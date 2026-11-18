@@ -129,8 +129,6 @@ Miss rates come from a single seed and move noticeably between seeds, so read th
 
 **Why:** The goal is to compare the diagnostic classification performance of the improved logisitic regression baseline against the actual results of our CNN model to evaluate how a simpler machine learning approach could perform relative to a more complex deep learning model. We improved upon our original logistic regression baseline by exploring whether a different feature representation could better capture patterns in ECG signals to improve classification. In particular, we wanted to see whether changing the feature representation could help address some of the weaknesses observed in the CNN.
 
-[TBD: what weakness in `cnn_all` this targets, e.g. the female MI misses or HYP]
-
 Notebook: [`notebooks/06_improving_logistic_baselien.ipynb`](notebooks/) · Results: `results/logreg_improved`
 
 ### Results (same test set, mean ± std over 3 seeds)

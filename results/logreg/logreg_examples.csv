@@ -1,0 +1,31 @@
+class,case,ecg_id,sex,true,prob
+NORM,success (true positive),3080,1,1,0.947
+NORM,success (true positive),17608,1,1,0.924
+NORM,"failure (missed, false negative)",11124,0,1,0.0
+NORM,"failure (missed, false negative)",15015,1,1,0.01
+NORM,"failure (false alarm, false positive)",18306,0,0,0.996
+NORM,"failure (false alarm, false positive)",6135,1,0,0.992
+MI,success (true positive),5755,0,1,0.999
+MI,success (true positive),544,0,1,0.998
+MI,"failure (missed, false negative)",4058,0,1,0.002
+MI,"failure (missed, false negative)",7876,1,1,0.003
+MI,"failure (false alarm, false positive)",11124,0,0,1.0
+MI,"failure (false alarm, false positive)",473,0,0,0.982
+STTC,success (true positive),4410,0,1,1.0
+STTC,success (true positive),13974,1,1,0.996
+STTC,"failure (missed, false negative)",7876,1,1,0.0
+STTC,"failure (missed, false negative)",19935,1,1,0.0
+STTC,"failure (false alarm, false positive)",5755,0,0,1.0
+STTC,"failure (false alarm, false positive)",10535,1,0,0.994
+CD,success (true positive),16359,0,1,0.998
+CD,success (true positive),13820,1,1,0.995
+CD,"failure (missed, false negative)",16920,0,1,0.0
+CD,"failure (missed, false negative)",1367,0,1,0.0
+CD,"failure (false alarm, false positive)",11124,0,0,1.0
+CD,"failure (false alarm, false positive)",7876,1,0,0.958
+HYP,success (true positive),1367,0,1,0.998
+HYP,success (true positive),6332,0,1,0.997
+HYP,"failure (missed, false negative)",16719,1,1,0.0
+HYP,"failure (missed, false negative)",7876,1,1,0.0
+HYP,"failure (false alarm, false positive)",16920,0,0,1.0
+HYP,"failure (false alarm, false positive)",11124,0,0,1.0

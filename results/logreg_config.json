@@ -1,5 +1,8 @@
 {
-  "model": "logistic_regression",
+  "model": "logistic_regression (one-vs-rest, non-neural baseline)",
+  "loss": "binary cross-entropy (log loss), L2 penalty, one classifier per class",
+  "solver": "liblinear",
+  "optimizer": "none (convex solver, no gradient training loop)",
   "feature_method": "mean of consecutive 10 samples per lead",
   "input_features": 1200,
   "sampling_rate_hz": 100,
@@ -33,9 +36,12 @@
   ],
   "match_size": false,
   "C_values": [
+    0.001,
+    0.01,
     0.1,
     1.0,
-    10.0
+    10.0,
+    100.0
   ],
   "selection_metric": "validation macro AUROC",
   "scaling": "StandardScaler fitted on training records only"

@@ -8,8 +8,6 @@ Chloe Jones · Olivia Semien
 
 **Short version (HuBERT extension):** Fine-tuning a self-supervised ECG foundation model (HuBERT-ECG, pretrained on 9.1M ECGs) did **not** beat our Check-in 2 CNN: macro AUROC 0.903 vs 0.924. The male–female gap shrank (0.012 → 0.002), but mostly because the model got worse for men, not better for women. Most of the loss is in hypertrophy (HYP), and the evidence points to the model's required per-ECG amplitude scaling, which erases the voltage information HYP is diagnosed from. The MI gap from Check-in 2 shows up again in every model.
 
-**Short version (improved baseline, Olivia):** [TBD: one or two sentences, see Section 4]
-
 ---
 
 ## 1. The extension

@@ -116,7 +116,7 @@ Miss rates come from a single seed and move noticeably between seeds, so read th
 
 ---
 
-## 4. Improving the CNN baseline (Olivia)
+## 4. Improving the CNN baseline
 
 <!-- TODO (Olivia): fill in every [TBD]. Keep the Check-in 2 protocol so the numbers line up with the tables above:
      train folds 1-7, val fold 8, test folds 9-10, training group "all", seeds 0-2, checkpoint selection on validation macro AUROC,
@@ -127,7 +127,7 @@ Miss rates come from a single seed and move noticeably between seeds, so read th
 
 **Why:** The goal is to compare the diagnostic classification performance of the improved logisitic regression baseline against the actual results of our CNN model to evaluate how a simpler machine learning approach could perform relative to a more complex deep learning model. We improved upon our original logistic regression baseline by exploring whether a different feature representation could better capture patterns in ECG signals to improve classification. In particular, we wanted to see whether changing the feature representation could help address some of the weaknesses observed in the CNN.
 
-Notebook: [`notebooks/06_improving_logistic_baselien.ipynb`](notebooks/) · Results: `results/logreg_improved`
+Notebook: [`notebooks/06_improving_logistic_baseline.ipynb`](notebooks/) · Results: `results/logreg_improved`
 
 ### Results (same test set, mean ± std over 3 seeds)
 

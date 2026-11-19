@@ -172,7 +172,7 @@ The improved logistic regression showed a substantial increase in diagnostic cla
 
 ## 6. Video
 
-~5 min, linked [HERE]([TBD])
+~5 min, linked [HERE](https://georgetown.zoom.us/rec/share/1J_2v773JVXGr_3BnfCyCEensfzGVF0WfudHIXqFBFY8QfLcxn2Vv2qWtY8nBpbX.LdTYfVzo9Bir0n4l?startTime=1795100795000)
 
 ---
 

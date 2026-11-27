@@ -59,9 +59,11 @@ Videos: [Check-in 1](https://georgetown.zoom.us/rec/share/U7h6VP5fh0Z8LLdASP5MVA
 ```bash
 git clone https://github.com/chloemjones13/6600_Final_Project.git
 cd 6600_Final_Project
-python -m venv .venv && source .venv/bin/activate      # Python 3.10+
+python3 -m venv .venv && source .venv/bin/activate     # Python 3.10+ (on Windows: .venv\Scripts\activate)
 pip install -r requirements.txt
 ```
+
+Inside the activated environment `python` works; without it, use `python3` on macOS/Linux.
 
 ### A. Rebuild the results (no data, no GPU)
 

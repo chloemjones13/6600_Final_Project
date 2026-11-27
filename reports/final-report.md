@@ -95,7 +95,7 @@ Fixed before any model was trained, and identical for every model in this report
 | `improved_logreg_female` | female | 0.764 | 0.762 | 0.769 | −0.007 | 0.544 |
 | `logreg_all` | all | 0.573 | 0.574 | 0.572 | 0.002 | 0.322 |
 
-CNN and logistic rows are rebuilt by [`src/evaluate.py`](../src/evaluate.py) from the saved predictions (full table, all nine CNN/logistic models: [`results/final/summary_by_model.csv`](../results/final/summary_by_model.csv)). HuBERT rows come from the executed outputs of notebook 05. The logistic models are deterministic and use no subsampling, so their three "seeds" are identical runs (std 0).
+Every row is rebuilt by [`src/evaluate.py`](../src/evaluate.py) from the saved predictions in `cnn_results/`, `hubert_results/` and `results/` (all 13 models: [`results/final/summary_by_model.csv`](../results/final/summary_by_model.csv)). The logistic models are deterministic and use no subsampling, so their three "seeds" are identical runs (std 0).
 
 ### Extension vs baseline
 

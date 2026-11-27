@@ -50,7 +50,7 @@ Data is gitignored. The repo carries code and the metadata CSV only, so anyone c
 
 ## 3. Data audit / EDA
 
-Notebooks: [`01_data_cleaning.ipynb`](notebooks/01_data_cleaning.ipynb) (cleaning, labels, test sets, basic EDA) → [`02_eda_signals.ipynb`](notebooks/02_eda_signals.ipynb) (signal-level EDA). Run in order; the first saves the cleaned data the second loads.
+Notebooks: [`01_data_cleaning.ipynb`](../notebooks/01_data_cleaning.ipynb) (cleaning, labels, test sets, basic EDA) → [`02_eda_signals.ipynb`](../notebooks/02_eda_signals.ipynb) (signal-level EDA). Run in order; the first saves the cleaned data the second loads.
 
 ### Cleaning
 
@@ -61,11 +61,11 @@ Notebooks: [`01_data_cleaning.ipynb`](notebooks/01_data_cleaning.ipynb) (cleanin
 
 ### Who is in the data
 
-![Age by sex](figures/age_by_sex.png)
+![Age by sex](../figures/age_by_sex.png)
 
 Women are older (median 63 vs 60) with a wider spread (SD 16.1 vs 14.2).
 
-![Diagnosis by sex](figures/diagnosis_by_sex.png)
+![Diagnosis by sex](../figures/diagnosis_by_sex.png)
 
 | | NORM | MI | STTC | CD | HYP |
 |---|---|---|---|---|---|
@@ -76,13 +76,13 @@ Base rates differ sharply: half of women's ECGs are normal vs 39% of men's, and 
 
 ### Signals
 
-![Example ECGs](figures/ecg_examples_by_diagnosis.png)
+![Example ECGs](../figures/ecg_examples_by_diagnosis.png)
 
-![Average heartbeat by sex](figures/average_beat_by_sex.png)
+![Average heartbeat by sex](../figures/average_beat_by_sex.png)
 
 Averaging ~1,000 normal ECGs, lead II is nearly identical by sex, but in the chest leads (V4, V5) the female R peak is clearly shorter (~1.05 vs ~1.4 mV) and the T wave lower; V1 shows a flatter ST/T segment in women. Sex differences sit in the chest leads and the ST/T region, which overlaps the features used to diagnose MI and STTC.
 
-![Amplitude by lead](figures/signal_amplitude_by_lead.png)
+![Amplitude by lead](../figures/signal_amplitude_by_lead.png)
 
 Women's median resting heart rate is 70.6 bpm vs 65.9 for men.
 
@@ -90,17 +90,17 @@ Women's median resting heart rate is 70.6 bpm vs 65.9 for men.
 
 **Label bias from male-derived criteria.** The Sokolow-Lyon voltage rule flags hypertrophy above 3.5 mV. Among patients *diagnosed* with HYP, only **49.0% of women** exceed it vs **61.5% of men**.
 
-![Sokolow-Lyon](figures/sokolow_hyp_vs_norm.png)
+![Sokolow-Lyon](../figures/sokolow_hyp_vs_norm.png)
 
 PTB-XL labels come from ECG reads, not imaging, so women whose hypertrophy the criteria miss may be labeled as not having it. A model trained on these labels can learn that bias, and our test set can't detect errors the labels share. We report performance as agreement with expert ECG reads, not ground-truth disease.
 
 **Device confound.** The CS100 device recorded **37.2% of men but 21.2% of women**. A model could learn device artifacts that correlate with sex, so any sex gap must be checked against device.
 
-![Device by sex](figures/device_by_sex.png)
+![Device by sex](../figures/device_by_sex.png)
 
 **Label quality.** Folds 1–8 are only 62–66% human-validated; about a third of training labels are unreviewed machine reports.
 
-![Validation by fold](figures/label_validation_by_fold.png)
+![Validation by fold](../figures/label_validation_by_fold.png)
 
 **Noise.** Static noise affects ~15% of records; baseline drift, burst noise, and extra beats each affect 2–10%. Rates are similar by sex.
 

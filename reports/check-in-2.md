@@ -20,11 +20,11 @@ We built the neural baseline: a 1D residual CNN over the raw 12-lead ECG, traine
 
 Each model is trained with 3 seeds (9 runs total) and every model is tested on **both** the male and female test sets (folds 9–10), giving a 3 × 2 grid. This grid is a first look at two of our questions: is sex-matched training data better for women than mixed data, and does more data close the male–female gap?
 
-Notebook: [`notebooks/03_cnn_baseline.ipynb`](notebooks/03_cnn_baseline.ipynb)
+Notebook: [`notebooks/03_cnn_baseline.ipynb`](../notebooks/03_cnn_baseline.ipynb)
 
 We also trained a non-neural comparison: a logistic regression on the same splits, groups and test sets (§4, *Logistic regression baseline*).
  
-Notebook: [`notebooks/04_logistic_baseline.ipynb`](notebooks/04_logistic_baseline.ipynb)
+Notebook: [`notebooks/04_logistic_baseline.ipynb`](../notebooks/04_logistic_baseline.ipynb)
 
 
  
@@ -110,7 +110,7 @@ As a non-neural comparison, we trained a one-vs-rest logistic regression (L2, `l
  
 **It performs near chance, and that is expected for this input.** Heartbeats fall at different positions in each recording, so a feature like "lead II at time slot 37" is mid-beat for one patient and between beats for another. A linear model can't account for that, so it has almost nothing consistent to learn from. The CNN's convolutions and global pooling detect patterns wherever they occur in the signal, which is a large part of why it does so much better. Because the logistic model is close to random for both sexes, it doesn't tell us anything about the male–female gap; it only shows that the raw waveform needs a position-invariant model (or position-invariant features).
  
-Outputs: [`results/logreg_summary_metrics.csv`](results/logreg_summary_metrics.csv), [`results/logreg_per_class_metrics.csv`](results/logreg_per_class_metrics.csv), and per-model predictions in `results/`.
+Outputs: [`results/logreg/logreg_summary_metrics.csv`](../results/logreg/logreg_summary_metrics.csv), [`results/logreg/logreg_per_class_metrics.csv`](../results/logreg/logreg_per_class_metrics.csv), and per-model predictions in `results/logreg/`.
 
 ---
 
@@ -149,18 +149,18 @@ The errors run in one direction: women's disease is missed more often (MI 37% vs
 
 For MI, STTC and HYP we plotted, from `cnn_all`, a confident correct case, the worst miss and the worst false alarm (lead II and V5, raw mV).
 
-![HYP examples](figures/cnn_figures/cnn_all_examples_HYP.png)
+![HYP examples](../figures/cnn_figures/cnn_all_examples_HYP.png)
 
 The worst HYP miss is a 66-year-old woman with low-amplitude V5 complexes; the model gives p(HYP) ≈ 0. The confident correct HYP case is a man with very tall V5 R waves. This matches the Check-in 1 EDA, where only 49% of women diagnosed with HYP met the Sokolow-Lyon voltage threshold vs 62% of men: a model that leans on voltage will miss low-voltage female hypertrophy. The worst STTC miss is also a woman. The worst MI miss is a man, so we don't want to over-read single examples; the miss-rate table above is the stronger evidence.
 
-![MI examples](figures/cnn_figures/cnn_all_examples_MI.png)
-![STTC examples](figures/cnn_figures/cnn_all_examples_STTC.png)
+![MI examples](../figures/cnn_figures/cnn_all_examples_MI.png)
+![STTC examples](../figures/cnn_figures/cnn_all_examples_STTC.png)
 
 ---
 
 ## 6. Training behavior
 
-![Training curves](figures/cnn_figures/cnn_training_curves.png)
+![Training curves](../figures/cnn_figures/cnn_training_curves.png)
 
 - Validation macro AUROC climbs fast and plateaus by roughly epoch 10–15 (~0.93 for single-sex models, ~0.94 for the combined model). All runs early-stopped between epochs 20 and 25.
 - **Validation loss bottoms out around epoch 8–15 and then rises** while training loss keeps falling — the model is overfitting and becoming overconfident, even though ranking (AUROC) holds steady. Because we select checkpoints on validation AUROC, the saved model may sit past the loss minimum, which can hurt calibration. We'll check this directly with the ECE/reliability curves, and may switch checkpoint selection to validation loss if calibration is poor.

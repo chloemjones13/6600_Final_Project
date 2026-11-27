@@ -56,6 +56,10 @@ Videos: [Check-in 1](https://georgetown.zoom.us/rec/share/U7h6VP5fh0Z8LLdASP5MVA
 
 ### Setup
 
+Needs Python 3.10+ and git. Paste the block for your system; after it, `python` runs inside the project's virtual environment on both.
+
+**macOS / Linux** (Terminal)
+
 ```bash
 git clone https://github.com/chloemjones13/6600_Final_Project.git
 cd 6600_Final_Project
@@ -64,7 +68,17 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Needs Python 3.10+. On Windows, activate with `.venv\Scripts\activate`. Inside the activated environment `python` works; outside it, macOS and Linux need `python3`.
+**Windows** (PowerShell)
+
+```powershell
+git clone https://github.com/chloemjones13/6600_Final_Project.git
+cd 6600_Final_Project
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+If PowerShell refuses to run the activate script, run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once and try again. In Command Prompt, activate with `.venv\Scripts\activate.bat` instead. Every command below is the same on both systems.
 
 ### A. Rebuild the results (no data, no GPU)
 
@@ -92,7 +106,7 @@ Streams the sampled records from PhysioNet (or reads `data/records100/` if you'v
 wget -r -N -c -np -nH --cut-dirs=3 -P data/ https://physionet.org/files/ptb-xl/1.0.3/
 ```
 
-This downloads the whole dataset (~1.7 GB zipped) into `data/`; what the code needs is `data/records100/` next to `data/ptbxl_database.csv`.
+This downloads the whole dataset (~1.7 GB zipped) into `data/`; what the code needs is `data/records100/` next to `data/ptbxl_database.csv`. On Windows (no `wget`), download the ZIP from the [PhysioNet page](https://physionet.org/content/ptb-xl/1.0.3/) instead and move its `records100/` folder into `data/`.
 
 On **Colab**, zip `records100/` and upload it to `MyDrive/6600_project/records100.zip`. The notebooks mount Drive, clone this repo, unzip the signals, and cache them to Drive so later sessions skip the load.
 

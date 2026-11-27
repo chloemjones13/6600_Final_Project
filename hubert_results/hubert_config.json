@@ -1,0 +1,73 @@
+{
+  "pretrained_model": "Edoardo-Coppola/hubert-ecg-small",
+  "license": "CC BY-NC 4.0 (non-commercial)",
+  "train_folds": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "val_folds": [
+    8
+  ],
+  "test_folds": [
+    9,
+    10
+  ],
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "selection_metric": "validation macro AUROC",
+  "loss": "BCEWithLogitsLoss (unweighted, same as CNN)",
+  "scheduler": "ReduceLROnPlateau(mode=max on val macro AUROC, factor=0.5, patience=2)",
+  "input": "12 leads, bandpass 0.05-47 Hz (FIR), resample 100->500 Hz, per-lead min-max to [-1, 1], two 5 s halves, each flattened (12 x 2500) and decimated x5 -> 6000 samples",
+  "train_crop": "one random half per record per batch",
+  "eval_crop": "mean of sigmoid probabilities over both halves",
+  "frozen": {
+    "lr": 0.001,
+    "weight_decay": 0.0001,
+    "batch_size": 64,
+    "max_epochs": 60,
+    "patience": 7,
+    "head_dropout": 0.2
+  },
+  "finetuned": {
+    "lr_backbone": 1e-05,
+    "lr_head": 0.001,
+    "weight_decay": 0.01,
+    "batch_size": 64,
+    "max_epochs": 20,
+    "patience": 5,
+    "head_dropout": 0.1,
+    "grad_clip": 1.0
+  },
+  "pooled_probes": {
+    "windows_500hz_starts": {
+      "frozen_meanmax2": [
+        0,
+        2500
+      ],
+      "frozen_meanmax3": [
+        0,
+        1250,
+        2500
+      ]
+    },
+    "pooling": "concat(mean, max) over windows",
+    "head": "same linear probe and hyperparameters as `frozen`"
+  },
+  "train_groups": [
+    "all"
+  ],
+  "regimes": [
+    "frozen",
+    "frozen_meanmax2",
+    "frozen_meanmax3",
+    "finetuned"
+  ]
+}

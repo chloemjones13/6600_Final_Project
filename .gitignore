@@ -21,3 +21,6 @@ checkpoints/
 
 # os
 .DS_Store
+
+# quick-demo output and evaluation scratch
+demo_output/

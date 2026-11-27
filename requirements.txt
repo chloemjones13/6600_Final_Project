@@ -1,9 +1,17 @@
-wfdb
-pandas
+# Python 3.10+. The GPU notebooks (03, 05) were run on Google Colab with a T4.
+# Data + EDA (notebooks 01-02, 04, 06) and the evaluation script
 numpy
+pandas
+scipy
 matplotlib
 seaborn
 scikit-learn
+wfdb
 jupyter
-scipy
 
+# Neural models (notebooks 03, 05 and src/quick_demo.py)
+# Colab already has torch; locally the CPU build is enough for the quick demo
+torch>=2.0
+
+# HuBERT-ECG extension (notebook 05): the model's remote code was written for transformers 4.x
+transformers>=4.40,<5

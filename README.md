@@ -1,201 +1,149 @@
-# Check-in 3 — DSAN 6600
+# Sex-Matched vs. More Data: What Closes the Subgroup Gap in ECG Classification?
 
-**Sex-Matched vs. More Data: What Closes the Subgroup Gap in ECG Classification?**
-
+**DSAN 6600 Final Project · Georgetown University · Fall 2026**
 Chloe Jones · Olivia Semien
 
-> Check-in 1: [`check-in-1.md`](check-in-1.md) · Check-in 2: [`Check-in 2.md`](Check-in%202.md)
+ECG classifiers trained on PTB-XL perform worse for women than for men. We ask whether that gap closes with **sex-matched training data** or with **more data**, holding the model fixed and changing only who is in the training set. We then test whether "more data" borrowed from outside the dataset (a foundation model pretrained on 9.1M ECGs) helps.
 
-**Short version (HuBERT extension):** Fine-tuning a self-supervised ECG foundation model (HuBERT-ECG, pretrained on 9.1M ECGs) did **not** beat our Check-in 2 CNN: macro AUROC 0.903 vs 0.924. The male–female gap shrank (0.012 → 0.002), but mostly because the model got worse for men, not better for women. Most of the loss is in hypertrophy (HYP), and the evidence points to the model's required per-ECG amplitude scaling, which erases the voltage information HYP is diagnosed from. The MI gap from Check-in 2 shows up again in every model.
-
----
-
-## 1. The extension
-
-**Transfer learning from a self-supervised ECG foundation model.** Check-in 2 asked whether *more data* closes the male–female gap within PTB-XL. Pretraining is more data borrowed from outside PTB-XL: HuBERT-ECG (Coppola et al.) was pretrained with self-supervision on 9.1 million unlabeled 12-lead ECGs from four countries. We use the SMALL model (8 transformer layers, hidden size 512) and compare it to our Check-in 2 CNN.
-
-| Model | What trains | Name |
-|---|---|---|
-| CNN from scratch (Check-in 2 baseline) | everything | `cnn_all` (1D ResNet, ~1.2M params) |
-| Frozen encoder (linear probe) | new 5-class linear head on mean-pooled HuBERT embeddings; each 5 s half predicted separately, probabilities averaged | `hubert_frozen_all` |
-| Frozen, pooled halves | same, but the two halves' embeddings are pooled (mean + max) before the head | `hubert_frozen_meanmax2_all` |
-| Frozen, pooled + overlap window | same, plus a 2.5–7.5 s window so nothing near the 5 s mark is split | `hubert_frozen_meanmax3_all` |
-| Fine-tuned encoder | all 8 transformer layers + head (conv feature extractor frozen) | `hubert_finetuned_all` |
-
-All models train on the same `all` group (folds 1–7, both sexes, 14,010 ECGs).
-
-Notebook: [`notebooks/05_hubert_transfer_mean.ipynb`](notebooks/05_hubert_transfer_mean.ipynb) (training and comparison, run on a Colab T4). Results: `hubert_results/`.
-
-### Input pipeline
-A pretrained encoder expects inputs that look like its pretraining data, so we use the authors' preprocessing instead of our CNN's z-score: 0.05–47 Hz FIR bandpass → resample to 500 Hz → per-lead min-max to [−1, 1] → 5 s windows, each flattened and decimated to 6,000 samples. We checked our implementation against the authors' pipeline (max difference < 1e-7). Each record is processed on its own, so no statistics are shared across records or sexes.
-
-### Training
-Fine-tuning follows the paper's PTB-XL recipe (AdamW, encoder LR 1e-5, weight decay 0.01, conv extractor frozen, layerdrop and dropout off), with two deliberate changes:
-- The randomly initialized head gets LR 1e-3.
-- The loss is **unweighted**, like the CNN's. Positive-class weights would distort the calibration-by-sex comparison.
-
-We also turned off the encoder's pretraining-time masking, which the Hugging Face version otherwise applies during training. Checkpoint selection, LR schedule and early stopping use validation macro AUROC, as for the CNN. Training randomly picks one 5 s half per ECG; evaluation averages over both halves. Budget: max 20 epochs, patience 5, about 32 s/epoch on a T4. The frozen variants train a linear head on cached embeddings in seconds.
+> **📄 [Read the final report](reports/final-report.md)** — problem, data, evaluation, models, results, failure analysis, limitations and future work in one document.
 
 ---
 
-## 2. Comparison (same protocol as Check-in 2)
+## Key findings
 
-Same splits (train folds 1–7, val fold 8, test folds 9–10), same labels, same test records (2,137 male / 1,842 female; the notebook checks this against the saved CNN predictions), same metrics, 3 seeds per model. Values are mean ± std over seeds.
+| | Macro AUROC, men | Macro AUROC, women | Gap (M − F) |
+|---|---|---|---|
+| CNN, trained on everyone (`cnn_all`, **baseline**) | **0.930** | **0.917** | 0.012 |
+| CNN, trained on women only | 0.913 | 0.905 | 0.008 |
+| CNN, trained on men only | 0.924 | 0.907 | 0.017 |
+| HuBERT-ECG, fine-tuned (**extension**) | 0.903 | 0.902 | 0.002 |
+| Logistic regression, lead statistics | 0.768 | 0.763 | 0.005 |
 
-### Macro AUROC and AUPRC by test sex
+*Test folds 9–10 (2,137 men, 1,842 women), mean over 3 seeds.*
 
-| Model | AUROC all | Male | Female | Gap (M − F) | AUPRC female |
-|---|---|---|---|---|---|
-| `cnn_all` | **0.924** ± 0.003 | **0.930** ± 0.003 | **0.917** ± 0.003 | 0.012 ± 0.001 | **0.801** |
-| `hubert_frozen_all` | 0.863 ± 0.000 | 0.863 | 0.862 | 0.001 | 0.675 |
-| `hubert_frozen_meanmax2_all` | 0.867 ± 0.000 | 0.867 | 0.866 | 0.001 | 0.681 |
-| `hubert_frozen_meanmax3_all` | 0.868 ± 0.001 | 0.869 | 0.865 | 0.004 | 0.682 |
-| `hubert_finetuned_all` | 0.903 ± 0.001 | 0.903 ± 0.001 | 0.902 ± 0.002 | 0.002 ± 0.002 | 0.748 |
+1. **More data beat sex-matched data for women** at the sizes we tested: the mixed CNN is best for women, and a CNN that never saw a female ECG matches the female-only one on women.
+2. **Every neural model is worse for women, including the female-only one**, so part of the gap comes from the female test set, not only the training mix.
+3. **The MI gap (0.016–0.030) survives sex-matching, more data, and a pretrained transformer.** It most likely comes from the signals or labels, not from training composition.
+4. **Errors run one way:** disease in women is missed more often (MI missed 37% of the time in women vs 27% in men).
+5. **The foundation model didn't help.** HuBERT-ECG's gap is smaller only because men lost more AUROC than women; it collapses on hypertrophy because its preprocessing erases ECG voltage.
 
-![AUROC by sex](figures/hubert_figures/auroc_by_sex_cnn_vs_hubert.png)
-
-**Extension vs baseline** (`hubert_finetuned_all` − `cnn_all`, difference of seed means): male −0.026, female −0.016, gap −0.011. Both drops are several times the seed-to-seed spread (std ≤ 0.003). The gap is smaller because men lost more than women did.
-
-### Ablations (one change each; difference of seed means)
-
-| Comparison | What changes | Male | Female | Gap |
-|---|---|---|---|---|
-| frozen → fine-tuned | encoder weights update on PTB-XL | **+0.040** | **+0.040** | +0.000 |
-| frozen → meanmax2 | average probabilities → learned mean + max pooling | +0.004 | +0.004 | −0.000 |
-| meanmax2 → meanmax3 | + overlapping 2.5–7.5 s window | +0.003 | −0.001 | +0.003 |
-
-The frozen variants vary very little across seeds (std ≤ 0.001), so even the small pooling gains are consistent from seed to seed.
-
-### Per-class AUROC gap (male − female, mean over seeds)
-
-| Class | `cnn_all` | frozen | meanmax2 | meanmax3 | fine-tuned |
-|---|---|---|---|---|---|
-| NORM | 0.007 | −0.001 | −0.001 | 0.001 | 0.002 |
-| MI | 0.021 | 0.024 | 0.022 | 0.023 | 0.016 |
-| STTC | 0.012 | −0.007 | −0.003 | −0.002 | 0.016 |
-| CD | 0.015 | 0.010 | 0.011 | 0.015 | 0.004 |
-| HYP | 0.007 | −0.020 | −0.024 | −0.016 | −0.030 |
-
-![Per-class gap](figures/hubert_figures/per_class_gap_cnn_vs_hubert.png)
-
-### HYP: where the extension loses most
-
-| | `cnn_all` | frozen | meanmax3 | fine-tuned |
-|---|---|---|---|---|
-| AUROC male / female | 0.902 / 0.895 | 0.780 / 0.800 | 0.789 / 0.805 | 0.819 / 0.848 |
-| Miss rate male / female (seed 0) | 0.53 / 0.55 | 0.92 / 0.90 | 0.85 / 0.84 | 0.84 / 0.81 |
-
-### Miss rates in women at a 0.5 cutoff (seed 0)
-
-| Class | `cnn_all` | `hubert_finetuned_all` |
-|---|---|---|
-| MI | 0.374 | 0.391 |
-| STTC | 0.390 | 0.398 |
-| CD | 0.327 | 0.392 |
-| HYP | 0.545 | 0.812 |
-
-Miss rates come from a single seed and move noticeably between seeds, so read them as rough.
+![Test AUROC by sex for every model](figures/final/auroc_by_sex_all_models.png)
 
 ---
 
-## 3. What got better or worse, and why
+## Project story
 
-**Worse overall.** The best HuBERT model (fine-tuned) is 2 AUROC points below the CNN, and the frozen variants are about 6 points below. It isn't undertrained: fine-tuned validation loss bottomed out at epochs 10–13 and then rose while training loss kept falling, best validation AUROC came at epochs 13–15, and 2 of 3 seeds early-stopped.
+| Stage | What we did | Write-up | Notebooks |
+|---|---|---|---|
+| **Check-in 1** | Problem framing, PTB-XL audit, EDA (base rates, voltage differences, label bias, device confound), evaluation plan | [check-in-1.md](reports/check-in-1.md) | [01](notebooks/01_data_cleaning.ipynb), [02](notebooks/02_eda_signals.ipynb) |
+| **Check-in 2** | Baseline: 1D ResNet CNN trained on female / male / all data (3 seeds each); logistic-regression floor; failure analysis | [check-in-2.md](reports/check-in-2.md) | [03](notebooks/03_cnn_baseline.ipynb), [04](notebooks/04_logistic_baseline.ipynb) |
+| **Check-in 3** | Extension: HuBERT-ECG transfer learning (frozen, pooled, fine-tuned) vs the CNN; improved logistic baseline | [check-in-3.md](reports/check-in-3.md) | [05](notebooks/05_hubert_transfer_mean.ipynb), [06](notebooks/06_improving_logistic_baseline.ipynb) |
+| **Final** | Full narrative, results rebuilt from saved predictions, limitations, future work | [final-report.md](reports/final-report.md) | [00 demo](notebooks/00_results_demo.ipynb) |
 
-**Main cause: amplitude scaling erases voltage (supported by the per-class results).** HuBERT's required preprocessing min-max scales every lead of every ECG to [−1, 1], so a very tall QRS and a normal one look the same. Our CNN z-scores with training-set statistics and keeps absolute voltage. Hypertrophy is diagnosed largely from QRS voltage, and HYP is exactly where HuBERT collapses: AUROC 0.90 → 0.82–0.85, miss rate about 54% → over 80% (seed 0). Changing which time windows the model sees (meanmax2/3) left HYP essentially unchanged, so HYP's problem is not time coverage. The other classes lose less (NORM about −0.02, MI/CD −0.01 to −0.02, STTC near zero), so the rest of the gap likely comes from the other differences: 5 s inputs vs the CNN's full 10 s, leads concatenated end to end instead of seen side by side, and a pretraining mix that differs from PTB-XL.
+Final report sections: [Problem](reports/final-report.md#1-problem-and-motivation) · [Data](reports/final-report.md#2-data) · [Evaluation](reports/final-report.md#3-evaluation-protocol) · [Models](reports/final-report.md#4-models) · [Results](reports/final-report.md#5-results) · [Failure analysis](reports/final-report.md#6-failure-analysis) · [Conclusions](reports/final-report.md#7-what-we-conclude) · [Limitations](reports/final-report.md#8-limitations) · [Future work](reports/final-report.md#9-future-work)
 
-**Why the model is built this way:** pretraining on 9.1M ECGs from ~11 datasets recorded on different devices needs inputs on a common scale, and the architecture is reused from speech, where loudness is irrelevant. Those choices help pretrain at scale but remove information that a specific diagnosis needs.
-
-**The gap "closed" by leveling down.** The male–female gap dropped from 0.012 to 0.002, but men lost 0.026 AUROC while women lost 0.016. Part of the shrinkage is HYP flipping to favor women under the new preprocessing. That is not a fairness improvement.
-
-**Fine-tuning helps both sexes equally.** Adapting the encoder to PTB-XL adds 0.040 AUROC for men and women alike, with no change in the gap. The pretrained representation alone (frozen) carries most of the signal, but not all of it.
-
-**Time windows matter little.** Learned pooling of the two halves beats averaging probabilities by a small but consistent 0.004. Adding an overlapping middle window adds 0.003 for men and nothing for women. Most of our five classes show up in every beat, so splitting the ECG at 5 s was not what held the model back.
-
-**The MI gap is robust.** MI is 0.016–0.024 worse for women in every model: the CNN, three frozen variants and the fine-tuned transformer. The frozen encoder never saw our labels or our sex split and still shows it. Together with Check-in 2 (sex-matched training didn't close it), this points to the MI gap coming from the signals or the labels rather than from training-set composition or architecture.
+Videos: [Check-in 1](https://georgetown.zoom.us/rec/share/U7h6VP5fh0Z8LLdASP5MVAZjTZPWpq3kQSlmA6FquTaVAzA-Bis6J5t6NKSxKQmK.NyYZniEmehRwY_nv?startTime=1790781544000) · [Check-in 2](https://georgetown.zoom.us/rec/share/2w44Ck5Cgy8kCSn4weL3ehHqS19dM76_IRvDnvnVY4d8fZqI003hjPLKibnPOZc4.Li545-hUdWyEy0iD) · [Check-in 3](https://georgetown.zoom.us/rec/share/1J_2v773JVXGr_3BnfCyCEensfzGVF0WfudHIXqFBFY8QfLcxn2Vv2qWtY8nBpbX.LdTYfVzo9Bir0n4l?startTime=1795100795000)
 
 ---
 
-## 4. Improving the CNN baseline
+## Quickstart: three ways to run it
 
-<!-- TODO (Olivia): fill in every [TBD]. Keep the Check-in 2 protocol so the numbers line up with the tables above:
-     train folds 1-7, val fold 8, test folds 9-10, training group "all", seeds 0-2, checkpoint selection on validation macro AUROC,
-     test on both sexes. Save predictions in the same CSV format as cnn_results/ (EVAL.md) so the comparison
-     tables can include the new model. -->
+| Path | What it shows | Needs | Time |
+|---|---|---|---|
+| **A. Rebuild the results** | every table in the report, from the saved predictions | no data download, no GPU | < 1 min |
+| **B. Quick demo** | the CNN trained and scored by sex end to end on ~1,000 real ECGs | internet (streams from PhysioNet), CPU | a few min |
+| **C. Full reproduction** | all experiments from raw data | PTB-XL download, GPU (Colab T4) | hours |
 
-**What changed:** The original CNN baseline was a logisitic regression that used 1,200 features, created by averaging consecutive groups of 10 samples from each of the 12 ECG leads. Our improved logisitic regression replaced this with 60 statistical features: the mean, standard deviation, minimum, maximum, and root mean square for each of the 12 leads. This reduced the number of input features from 1,200 to 60 while introducing additional statistical information about the ECG signals, rather than relying only on averages. 
+### Setup
 
-**Why:** The goal is to compare the diagnostic classification performance of the improved logisitic regression baseline against the actual results of our CNN model to evaluate how a simpler machine learning approach could perform relative to a more complex deep learning model. We improved upon our original logistic regression baseline by exploring whether a different feature representation could better capture patterns in ECG signals to improve classification. In particular, we wanted to see whether changing the feature representation could help address some of the weaknesses observed in the CNN.
+```bash
+git clone https://github.com/chloemjones13/6600_Final_Project.git
+cd 6600_Final_Project
+python -m venv .venv && source .venv/bin/activate      # Python 3.10+
+pip install -r requirements.txt
+```
 
-Notebook: [`notebooks/06_improving_logistic_baseline.ipynb`](notebooks/) · Results: `results/logreg_improved`
+### A. Rebuild the results (no data, no GPU)
 
-### Results (same test set, mean ± std over 3 seeds)
+```bash
+python src/evaluate.py
+```
 
-| Model | AUROC all | Male | Female | Gap (M − F) | AUPRC female |
-|---|---|---|---|---|---|
-| `cnn_all` (Check-in 2) | 0.924 ± 0.003 | 0.930 ± 0.003 | 0.917 ± 0.003 | 0.012 ± 0.001 | 0.801 |
-| `improved_logreg_all` | 0.765 ± 0.000 | 0.768 ± 0.000 | 0.763 ± 0.000| 0.005 ± 0.000| 0.543 |
-| `hubert_finetuned_all` | 0.903 ± 0.001 | 0.903 ± 0.001 | 0.902 ± 0.002 | 0.002 ± 0.002 | 0.748 |
+Reads every `*_preds.csv` in `cnn_results/`, `results/` and `hubert_results/`, checks that all models were scored on the same 3,979 test ECGs with the same labels, prints the summary, per-class gap and miss-rate tables, and writes them to [`results/final/`](results/final/). The rendered version, with figures, is **[`notebooks/00_results_demo.ipynb`](notebooks/00_results_demo.ipynb)**.
 
-**Difference vs `cnn_all`** (difference of seed means): male [-0.162], female [-0.154], gap [-0.007].
+### B. Quick demo (small training run on CPU)
 
-### Per-class gap (mean over seeds) and female miss rates (seed 0)
+```bash
+python src/quick_demo.py                   # 500 train / 150 val / 400 test ECGs, 5 epochs
+python src/quick_demo.py --group female    # train on women only
+python src/quick_demo.py --smoke-test      # random signals: checks the install without any download
+```
 
-| Class | Gap: `cnn_all` | Gap: `improved_logreg_all` | Female miss: `cnn_all` | Female miss: `improved_logreg_all` |
-|---|---|---|---|---|
-| NORM | 0.007 | 0.007 | 0.061 | 0.246 |
-| MI | 0.021 | 0.012 | 0.374 | 0.814 |
-| STTC | 0.012 | 0.025 | 0.390 | 0.920 |
-| CD | 0.015 | -0.001 | 0.327 | 0.643 |
-| HYP | 0.007 | -0.015 | 0.545 | 0.708 |
+Streams the sampled records from PhysioNet (or reads `data/records100/` if you've downloaded PTB-XL), trains the same CNN as the baseline, and prints AUROC by sex plus miss rates in women. Predictions go to `demo_output/` in the same format as the full runs, so `python src/evaluate.py --files demo_output/*_preds.csv` scores them. Expect AUROC well below the full runs: it's a tiny training set and a handful of epochs, meant to show the pipeline, not the results.
 
-### Ablation
+### C. Full reproduction
 
-We tested a change in the feature representation used by the logisitic regression. The original approach used 1,200 features generated by averaging consecutive 10-sample segments across the 12 ECG leads. The AUROC scores from the original approach ranged from approximately 0.544 to 0.579, indicating a performance only slightly above random guessing. The improved approach used 60 statistical features: the mean, standard deviation, minimum, maximum, and RMS for each lead. The improved model achieved an overall macro AUROC of 0.765 and a female AUROC of 0.763. This suggests that the new statistical feature representation captured substantially more useful diagnostic information from the ECG signals than the original approach. These results remained below the CNN's overall test AUROC of 0.924, however, the improvement provides a much stronger and more meaningful logistic baseline regression for comparison. 
+**1. Get the data.** PTB-XL v1.0.3 is open access ([PhysioNet](https://physionet.org/content/ptb-xl/1.0.3/), CC BY 4.0, no credentialing). The two metadata CSVs are already in `data/`; only the signals need downloading. We use the 100 Hz records (`records100/`).
 
-### What got better or worse, and why
+```bash
+# whole dataset (~1.7 GB zipped), into data/
+wget -r -N -c -np -nH --cut-dirs=3 -P data/ https://physionet.org/files/ptb-xl/1.0.3/
+# you need data/records100/ next to data/ptbxl_database.csv
+```
 
-The improved logistic regression showed a substantial increase in diagnostic classification performance compared with the orignal CNN baseline as the overall AUROC increased. While the improved logistic regression baseline still performed below the CNN, there were no performance declines in the improved model compared with the original logistic regression. Further, the logisitic regression baseline continued to struggle with female MI and HYP cases, suggestign that the statistical features may not capture the complex waveform patterns that the CNN learns from the raw ECG signals. 
+On **Colab**, zip `records100/` and upload it to `MyDrive/6600_project/records100.zip`. The notebooks mount Drive, clone this repo, unzip the signals, and cache them to Drive so later sessions skip the load.
 
----
+**2. Run the notebooks in order** (each one's first cells handle paths for both Colab and local runs):
 
-## 5. Remaining limitations
+| Notebook | Does | Writes | Hardware / time |
+|---|---|---|---|
+| [`01_data_cleaning`](notebooks/01_data_cleaning.ipynb) | age filter, superclass labels, splits, cohort EDA | `data/ptbxl_model.pkl`, `figures/*.png` | CPU, seconds |
+| [`02_eda_signals`](notebooks/02_eda_signals.ipynb) | signal-level EDA | `figures/*.png` | CPU, minutes |
+| [`03_cnn_baseline`](notebooks/03_cnn_baseline.ipynb) | CNN × {female, male, all} × 3 seeds | `results/cnn_*` (committed copy in `cnn_results/`), `figures/cnn_figures/` | T4: ~2 min per run, ~20 min total |
+| [`04_logistic_baseline`](notebooks/04_logistic_baseline.ipynb) | raw-feature logistic regression | `results/logreg/` | CPU, minutes |
+| [`05_hubert_transfer_mean`](notebooks/05_hubert_transfer_mean.ipynb) | HuBERT-ECG frozen / pooled / fine-tuned, comparison vs CNN | `hubert_results/`, `figures/hubert_figures/` | T4: ~32 s/epoch fine-tuned (3 seeds × up to 20 epochs); downloads weights from Hugging Face |
+| [`06_improving_logistic_baseline`](notebooks/06_improving_logistic_baseline.ipynb) | lead-statistics logistic regression | `results/logreg_improved/` | CPU, minutes |
 
-- **Amplitude explanation is supported, not proven.** A direct test would restore each lead's original amplitude range as extra inputs to the frozen probe and check whether HYP recovers.
-- **Not a pure architecture comparison.** The CNN and HuBERT differ in architecture, size (~1.2M vs tens of millions of parameters), preprocessing and training budget at once. The ablations isolate single changes within HuBERT; an optional from-scratch HuBERT control (`RUN_SCRATCH = True` in the notebook) was not run.
-- **Pretraining overlap with our test set.** HuBERT-ECG's pretraining data includes PTB-XL with labels removed, and the paper doesn't say test folds were held out, so the encoder has likely seen our test ECGs (never their labels). This could only have helped HuBERT, which still underperformed.
-- **Only the `all` training group** was run for HuBERT, so we haven't tested whether pretraining changes the sex-matched vs mixed result from Check-in 2.
-- **Shorter training budget** than the paper (about 20 epochs vs 70k steps), although validation had already peaked.
-- **Check-in 2 limitations still apply:** labels are expert reads that may under-diagnose women (HYP), and device effects haven't been checked against the gap.
+Notebooks 03–06 call notebook 01 automatically if `ptbxl_model.pkl` is missing. Training runs skip any (model, seed) whose outputs already exist, so an interrupted Colab session resumes where it stopped. Every run's settings are saved next to its predictions (`*_config.json`).
 
----
-
-## 6. Video
-
-~5 min, linked [HERE](https://georgetown.zoom.us/rec/share/1J_2v773JVXGr_3BnfCyCEensfzGVF0WfudHIXqFBFY8QfLcxn2Vv2qWtY8nBpbX.LdTYfVzo9Bir0n4l?startTime=1795100795000)
-
----
-
-## 7. AI Disclosure
-
-We used AI as an assistant on this check-in, specifically for:
-
-- **Code** 
-- **Research** 
-- **Analysis and writing**
-
-**Credit to the HuBERT-ECG authors:** the pretrained model (architecture and weights) is theirs, loaded from Hugging Face. Our preprocessing re-implements theirs, and our fine-tuning settings (learning rate, optimizer, frozen conv layers, dropout/layerdrop off) follow their released PTB-XL scripts, both from https://github.com/Edoar-do/HuBERT-ECG. The training loop, classification wrapper and comparison analysis are our own, adapted from our Check-in 2 CNN notebook.
-
-All code was run by us on the real data, and all numbers come from our notebook outputs. We reviewed and edited the AI-assisted code and text, and we are responsible for the final content.
+**Cheaper full-data paths:** in notebook 03, set `CONFIG["seeds"] = [0]` and `CONFIG["train_groups"] = ["all"]` for a single ~2 min run. In notebook 05, the frozen variants train a linear head on cached embeddings in seconds once embeddings are computed; fine-tuning is the expensive part.
 
 ---
 
-## 8. References
+## Repository layout
 
-Coppola, E., Savardi, M., Massussi, M., Adamo, M., Metra, M., & Signoroni, A. (2024). HuBERT-ECG as a self-supervised foundation model for broad and scalable cardiac applications. *medRxiv*. https://doi.org/10.1101/2024.11.14.24317328
+```
+├── README.md                  ← you are here
+├── reports/
+│   ├── final-report.md        ← full technical narrative
+│   ├── check-in-1.md          ← framing, data audit, EDA, evaluation plan
+│   ├── check-in-2.md          ← CNN baseline + failure analysis
+│   └── check-in-3.md          ← HuBERT-ECG extension + improved logistic baseline
+├── notebooks/
+│   ├── 00_results_demo.ipynb  ← demo: rebuilds all results, no data needed
+│   └── 01 … 06                ← cleaning → EDA → CNN → logreg → HuBERT → improved logreg
+├── src/
+│   ├── ptbxl.py               ← metadata cleaning, labels, splits (same as notebook 01)
+│   ├── cnn.py                 ← the 1D ResNet (same as notebook 03)
+│   ├── evaluate.py            ← rebuilds every results table from saved predictions
+│   └── quick_demo.py          ← small CPU training run, end to end
+├── data/                      ← ptbxl_database.csv, scp_statements.csv (signals are gitignored)
+├── cnn_results/               ← CNN predictions + training histories, 9 runs
+├── hubert_results/            ← HuBERT predictions + histories
+├── results/
+│   ├── logreg/, logreg_improved/
+│   └── final/                 ← tables rebuilt by src/evaluate.py
+├── figures/                   ← EDA (top level), cnn_figures/, hubert_figures/, logreg*/, final/
+└── requirements.txt
+```
 
-Hsu, W.-N., Bolte, B., Tsai, Y.-H. H., Lakhotia, K., Salakhutdinov, R., & Mohamed, A. (2021). HuBERT: Self-supervised speech representation learning by masked prediction of hidden units. *IEEE/ACM TASLP*, 29, 3451–3460. https://doi.org/10.1109/TASLP.2021.3122291
+**Prediction file format** (all `*_preds.csv`): one row per ECG with `ecg_id`, `split`, `sex` (0 = male, 1 = female), `age`, `device`, true labels `y_NORM … y_HYP`, predicted probabilities `p_NORM … p_HYP`, `model`, `train_group`, `n_train`, `seed`. Any new model saved in this format drops straight into `src/evaluate.py`.
 
-Wagner, P., Strodthoff, N., Bousseljot, R.-D., Kreiseler, D., Lunze, F. I., Samek, W., & Schaeffter, T. (2020). PTB-XL, a large publicly available electrocardiography dataset. *Scientific Data*. https://doi.org/10.1038/s41597-020-0495-6
+---
 
-Strodthoff, N., Wagner, P., Schaeffter, T., & Samek, W. (2021). Deep learning for ECG analysis: Benchmarks and insights from PTB-XL. *IEEE JBHI*, 25(5), 1519–1528. https://doi.org/10.1109/JBHI.2020.3022989
+## Data and licenses
+
+- **PTB-XL** v1.0.3, Wagner et al. (2020), CC BY 4.0. Not redistributed here beyond the two metadata CSVs.
+- **HuBERT-ECG** weights (`Edoardo-Coppola/hubert-ecg-small`), Coppola et al. (2024), CC BY-NC 4.0 (non-commercial). Downloaded at run time, not stored here.
+
+Full references and our AI-use disclosure are at the end of the [final report](reports/final-report.md#ai-disclosure).

@@ -96,7 +96,7 @@ python src/quick_demo.py
 
 By default this samples 500 train / 150 val / 400 test ECGs and trains for 5 epochs. Add `--group female` to train on women only, or `--smoke-test` to check the install with random signals and no download.
 
-Streams the sampled records from PhysioNet (or reads `data/records100/` if you've downloaded PTB-XL), trains the same CNN as the baseline, and prints AUROC by sex plus miss rates in women. Predictions go to `demo_output/` in the same format as the full runs, so `python src/evaluate.py --files demo_output/*_preds.csv` scores them. Expect AUROC well below the full runs: it's a tiny training set and a handful of epochs, meant to show the pipeline, not the results. Reference run (M2 MacBook Pro, default settings): streaming ~2 min, training ~9 s/epoch, test macro AUROC **0.874** (male 0.878, female 0.869, gap +0.009).
+Streams the sampled records from PhysioNet (or reads `data/records100/` if you've downloaded PTB-XL), trains the same CNN as the baseline, and prints AUROC by sex plus miss rates in women. Predictions go to `demo_output/` in the same format as the full runs, so `python src/evaluate.py --files demo_output/*_preds.csv` scores them. Expect AUROC well below the full runs: it's a tiny training set and a handful of epochs, meant to show the pipeline, not the results. Reference run (Apple-silicon MacBook Pro, CPU, default settings): streaming ~2 min, training ~9 s/epoch, test macro AUROC **0.874** (male 0.878, female 0.869, gap +0.009).
 
 ### C. Full reproduction
 

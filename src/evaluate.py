@@ -105,7 +105,10 @@ def main():
     ap.add_argument("--files", nargs="*", help="specific *_preds.csv files (default: search the results folders)")
     args = ap.parse_args()
 
-    files = args.files or find_prediction_files()
+    if args.files:  # expand wildcards here too, since Windows shells pass them through literally
+        files = sorted({f for pat in args.files for f in (glob.glob(pat) or [pat])})
+    else:
+        files = find_prediction_files()
     if not files:
         sys.exit("No *_preds.csv files found.")
     preds = load_predictions(files)

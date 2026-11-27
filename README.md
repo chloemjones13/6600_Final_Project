@@ -56,14 +56,29 @@ Videos: [Check-in 1](https://georgetown.zoom.us/rec/share/U7h6VP5fh0Z8LLdASP5MVA
 
 ### Setup
 
+Needs Python 3.10+ and git. Paste the block for your system; after it, `python` runs inside the project's virtual environment on both.
+
+**macOS / Linux** (Terminal)
+
 ```bash
 git clone https://github.com/chloemjones13/6600_Final_Project.git
 cd 6600_Final_Project
-python3 -m venv .venv && source .venv/bin/activate     # Python 3.10+ (on Windows: .venv\Scripts\activate)
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Inside the activated environment `python` works; without it, use `python3` on macOS/Linux.
+**Windows** (PowerShell)
+
+```powershell
+git clone https://github.com/chloemjones13/6600_Final_Project.git
+cd 6600_Final_Project
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+If PowerShell refuses to run the activate script, run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once and try again. In Command Prompt, activate with `.venv\Scripts\activate.bat` instead. Every command below is the same on both systems.
 
 ### A. Rebuild the results (no data, no GPU)
 
@@ -76,22 +91,22 @@ Reads every `*_preds.csv` in `cnn_results/`, `results/` and `hubert_results/`, c
 ### B. Quick demo (small training run on CPU)
 
 ```bash
-python src/quick_demo.py                   # 500 train / 150 val / 400 test ECGs, 5 epochs
-python src/quick_demo.py --group female    # train on women only
-python src/quick_demo.py --smoke-test      # random signals: checks the install without any download
+python src/quick_demo.py
 ```
 
-Streams the sampled records from PhysioNet (or reads `data/records100/` if you've downloaded PTB-XL), trains the same CNN as the baseline, and prints AUROC by sex plus miss rates in women. Predictions go to `demo_output/` in the same format as the full runs, so `python src/evaluate.py --files demo_output/*_preds.csv` scores them. Expect AUROC well below the full runs: it's a tiny training set and a handful of epochs, meant to show the pipeline, not the results.
+By default this samples 500 train / 150 val / 400 test ECGs and trains for 5 epochs. Add `--group female` to train on women only, or `--smoke-test` to check the install with random signals and no download.
+
+Streams the sampled records from PhysioNet (or reads `data/records100/` if you've downloaded PTB-XL), trains the same CNN as the baseline, and prints AUROC by sex plus miss rates in women. Predictions go to `demo_output/` in the same format as the full runs, so `python src/evaluate.py --files demo_output/*_preds.csv` scores them. Expect AUROC well below the full runs: it's a tiny training set and a handful of epochs, meant to show the pipeline, not the results. Reference run (Apple-silicon MacBook Pro, CPU, default settings): streaming ~2 min, training ~9 s/epoch, test macro AUROC **0.874** (male 0.878, female 0.869, gap +0.009).
 
 ### C. Full reproduction
 
 **1. Get the data.** PTB-XL v1.0.3 is open access ([PhysioNet](https://physionet.org/content/ptb-xl/1.0.3/), CC BY 4.0, no credentialing). The two metadata CSVs are already in `data/`; only the signals need downloading. We use the 100 Hz records (`records100/`).
 
 ```bash
-# whole dataset (~1.7 GB zipped), into data/
 wget -r -N -c -np -nH --cut-dirs=3 -P data/ https://physionet.org/files/ptb-xl/1.0.3/
-# you need data/records100/ next to data/ptbxl_database.csv
 ```
+
+This downloads the whole dataset (~1.7 GB zipped) into `data/`; what the code needs is `data/records100/` next to `data/ptbxl_database.csv`. On Windows (no `wget`), download the ZIP from the [PhysioNet page](https://physionet.org/content/ptb-xl/1.0.3/) instead and move its `records100/` folder into `data/`.
 
 On **Colab**, zip `records100/` and upload it to `MyDrive/6600_project/records100.zip`. The notebooks mount Drive, clone this repo, unzip the signals, and cache them to Drive so later sessions skip the load.
 
